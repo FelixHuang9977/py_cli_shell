@@ -11,38 +11,94 @@ from typing import Dict, List
 class CommandShell:
     def __init__(self):
         self.commands: Dict[str, tuple] = {}  # 存儲命令名稱和對應的模組
+        self.current_path = 'cmd'  # 當前目錄路徑
         self.load_commands()
         self.setup_readline()
         # 保存原始的終端設置
         self.old_settings = termios.tcgetattr(sys.stdin)
         # 當前的輸入緩衝
         self.current_buffer = ""
+        self.going_quit=False
 
+    def get_prompt(self):
+        """生成提示符號"""
+        # 將完整路徑轉換為相對於 cmd 目錄的路徑
+        rel_path = os.path.relpath(self.current_path, 'cmd')
+        if rel_path == '.':
+            return 'cmd> '
+        else:
+            return f'cmd/{rel_path}> '
     def load_commands(self):
-        """遞迴載入 cmd 目錄及其子目錄下所有的命令模組"""
-        for root, _, files in os.walk('cmd'):
-            for file in files:
-                if file.startswith('cmd_') and file.endswith('.py'):
-                    full_path = os.path.join(root, file)
-                    # 計算相對路徑作為命令名稱
-                    rel_path = os.path.relpath(full_path, 'cmd')
-                    dir_path = os.path.dirname(rel_path)
-                    module_name = os.path.splitext(os.path.basename(file))[0]
-                    command_name = module_name[4:]  # 移除 'cmd_' 前綴
+        """載入當前目錄下的命令模組"""
+        self.commands.clear()
+        
+        # 獲取當前目錄下的所有項目
+        items = [item for item in os.listdir(self.current_path) 
+            if item != '__pycache__']  # 排除 __pycache__ 目錄
+        
+        # 檢查是否有子目錄
+        has_subdirs = any(os.path.isdir(os.path.join(self.current_path, item)) for item in items)
+        
+        # 只有在有子目錄的情況下才添加 cd 命令
+        if has_subdirs:
+            self.commands['cd'] = (None, self.create_cd_parser())
+            
+        # 載入命令模組
+        for item in items:
+            full_path = os.path.join(self.current_path, item)
+            
+            # 如果是 Python 檔案且以 cmd_ 開頭
+            if os.path.isfile(full_path) and item.startswith('cmd_') and item.endswith('.py'):
+                module_name = os.path.splitext(item)[0]
+                command_name = module_name[4:]  # 移除 'cmd_' 前綴
 
-                    # 如果在子目錄中，將目錄名加入命令名稱
-                    if dir_path and dir_path != '.':
-                        command_name = f"{dir_path.replace(os.sep, '.')}.{command_name}"
+                # 動態載入模組
+                spec = importlib.util.spec_from_file_location(module_name, full_path)
+                module = importlib.util.module_from_spec(spec)
+                spec.loader.exec_module(module)
 
-                    # 動態載入模組
-            spec = importlib.util.spec_from_file_location(module_name, full_path)
-            module = importlib.util.module_from_spec(spec)
-            spec.loader.exec_module(module)
+                # 確保模組有必要的函數
+                if hasattr(module, 'setup_parser') and hasattr(module, 'execute'):
+                    parser = module.setup_parser()
+                    self.commands[command_name] = (module, parser)
 
-            # 確保模組有必要的函數
-            if hasattr(module, 'setup_parser') and hasattr(module, 'execute'):
-                parser = module.setup_parser()
-                self.commands[command_name] = (module, parser)
+    def create_cd_parser(self):
+        """創建 cd 命令的解析器"""
+        parser = argparse.ArgumentParser(description='Change current directory')
+        parser.add_argument('path', nargs='?', default='..',
+                          help='Directory to change to (.. for parent directory)')
+        return parser
+
+    def execute_cd(self, args):
+        """執行 cd 命令"""
+        target_path = args.path
+        
+        if target_path == '..':
+            # 移動到上層目錄，但不能超過 cmd 目錄
+            if os.path.abspath(self.current_path) != os.path.abspath('cmd'):
+                self.current_path = os.path.dirname(self.current_path)
+        else:
+            # 嘗試進入子目錄
+            new_path = os.path.join(self.current_path, target_path)
+            if os.path.isdir(new_path):
+                self.current_path = new_path
+            else:
+                print(f"Directory not found: {target_path}")
+                return
+
+        print(f"Current directory: {self.current_path}")
+        self.load_commands()  # 重新載入當前目錄的命令
+
+    def get_available_dirs(self) -> List[str]:
+        """獲取當前目錄下的子目錄"""
+        dirs = []
+        for item in os.listdir(self.current_path):
+            if item == '__pycache__':  # 跳過 __pycache__ 目錄
+                continue
+            full_path = os.path.join(self.current_path, item)
+            if os.path.isdir(full_path):
+                dirs.append(item)
+        return dirs
 
     def get_command_names(self) -> List[str]:
         """獲取所有可用的命令名稱"""
@@ -61,22 +117,19 @@ class CommandShell:
         return options
 
     def get_partial_matches(self, text: str) -> List[str]:
-        """獲取部分匹配的命令或子目錄"""
+        """獲取部分匹配的命令或目錄"""
         if not text:
-            return self.get_command_names()
+            return self.get_command_names() + self.get_available_dirs()
 
-        # 取得所有命令名稱的唯一前綴（目錄）
-        all_prefixes = set()
-        for cmd in self.get_command_names():
-            parts = cmd.split('.')
-            for i in range(len(parts)):
-                all_prefixes.add('.'.join(parts[:i+1]))
-
-        # 找出匹配的命令和前綴
         matches = []
-        for item in all_prefixes:
-            if item.startswith(text):
-                matches.append(item)
+        # 匹配命令
+        for cmd in self.get_command_names():
+            if cmd.startswith(text):
+                matches.append(cmd)
+        # 匹配目錄
+        for dir_name in self.get_available_dirs():
+            if dir_name.startswith(text):
+                matches.append(dir_name)
         return sorted(matches)
 
     def setup_readline(self):
@@ -91,28 +144,24 @@ class CommandShell:
         
         print('\n')  # 新增一個空行，使輸出更清晰
         
-        # 如果沒有輸入，顯示所有可用命令
+        # 如果沒有輸入，顯示所有可用命令和目錄
         if not tokens:
-            print("Available commands:")
+            print("\nAvailable commands:")
             for cmd in sorted(self.commands.keys()):
-                _, parser = self.commands[cmd]
-                print(f"  {cmd:<30} - {parser.description}")
+                if cmd == 'cd':
+                    print(f"  {cmd:<30} - Change directory")
+                else:
+                    _, parser = self.commands[cmd]
+                    print(f"  {cmd:<30} - {parser.description}")
+            
+            dirs = self.get_available_dirs()
+            if dirs:
+                print("\nSubdirectories:")
+                for dir_name in sorted(dirs):
+                    print(f"  {dir_name}/")
             return
 
-        # 如果只輸入了部分命令名稱
-        if len(tokens) == 1 and not buffer.endswith(' '):
-            matches = self.get_partial_matches(tokens[0])
-            if matches:
-                print("Matching commands:")
-                for cmd in matches:
-                    if cmd in self.commands:
-                        _, parser = self.commands[cmd]
-                        print(f"  {cmd:<30} - {parser.description}")
-                    else:
-                        print(f"  {cmd}.*")
-            return
-
-        # 如果輸入了完整的命令，顯示該命令的幫助
+        # 如果輸入了命令
         command_name = tokens[0]
         if command_name in self.commands:
             _, parser = self.commands[command_name]
@@ -128,9 +177,16 @@ class CommandShell:
         line = buffer.lstrip()
         tokens = line.split()
 
-        # 如果正在輸入命令或子目錄
+        # 如果正在輸入第一個詞
         if not tokens or (len(tokens) == 1 and not buffer.endswith(' ')):
             matches = self.get_partial_matches(text)
+            if state < len(matches):
+                return matches[state]
+            return None
+
+        # 如果是 cd 命令，自動完成目錄
+        if tokens[0] == 'cd' and len(tokens) <= 2:
+            matches = [d for d in self.get_available_dirs() if d.startswith(text)]
             if state < len(matches):
                 return matches[state]
             return None
@@ -196,53 +252,55 @@ class CommandShell:
         sys.stdout.flush()
 
         while True:
-            c = self.getch()
-            # 處理特殊鍵
-            if c == '\x03':  # Ctrl+C
-                print('^C')
-                line = []
-                break
-            elif c == '\x04':  # Ctrl+D
-                if not line:
+            try:
+                c = self.getch()
+                # 處理特殊鍵
+                if c == '\x03':  # Ctrl+C
+                    line = []
+                    raise KeyboardInterrupt
+                    break
+                elif c == '\x04':  # Ctrl+D
+                    if not line:
+                        print()
+                        return None
+                elif c == '\x7f':  # Backspace
+                    if pos > 0:
+                        line.pop(pos-1)
+                        pos -= 1
+                        # 重新顯示行
+                        sys.stdout.write('\r' + ' ' * (len(prompt) + len(line) + 1))
+                        sys.stdout.write('\r' + prompt + ''.join(line))
+                        sys.stdout.flush()
+                elif c == '?':  # 問號鍵
+                    # 顯示幫助
+                    current_input = ''.join(line)
+                    self.show_help_for_current_input(current_input)
+                    # 重新顯示提示符和當前輸入
+                    print(f"\n{prompt}{''.join(line)}", end='', flush=True)
+                elif c == '\t':  # Tab
+                    # 處理自動完成
+                    current_input = ''.join(line)
+                    new_input = self.handle_tab(current_input)
+                    if new_input != current_input:
+                        # 清除當前行
+                        sys.stdout.write('\r' + ' ' * (len(prompt) + len(line) + 1))
+                        sys.stdout.write('\r' + prompt + new_input)
+                        line = list(new_input)
+                        pos = len(line)
+                    sys.stdout.write('\r' + prompt + ''.join(line))
+                    sys.stdout.flush()
+                elif c == '\r' or c == '\n':  # Enter
                     print()
-                    return None
-            elif c == '\x7f':  # Backspace
-                if pos > 0:
-                    line.pop(pos-1)
-                    pos -= 1
-                    # 重新顯示行
-                    sys.stdout.write('\r' + ' ' * (len(prompt) + len(line) + 1))
-                    sys.stdout.write('\r' + prompt + ''.join(line))
-                    sys.stdout.flush()
-            elif c == '?':  # 問號鍵
-                # 顯示幫助
-                current_input = ''.join(line)
-                self.show_help_for_current_input(current_input)
-                # 重新顯示提示符和當前輸入
-                print(f"\n{prompt}{''.join(line)}", end='', flush=True)
-            elif c == '\t':  # Tab
-                # 處理自動完成
-                current_input = ''.join(line)
-                new_input = self.handle_tab(current_input)
-                if new_input != current_input:
-                    # 清除當前行
-                    sys.stdout.write('\r' + ' ' * (len(prompt) + len(line) + 1))
-                    sys.stdout.write('\r' + prompt + new_input)
-                    line = list(new_input)
-                    pos = len(line)
-                sys.stdout.write('\r' + prompt + ''.join(line))
-                sys.stdout.flush()
-            elif c == '\r' or c == '\n':  # Enter
-                print()
-                return ''.join(line)
-            else:  # 一般字符
-                if ord(c) >= 32:  # 可印字符
-                    line.insert(pos, c)
-                    pos += 1
-                    # 重新顯示整行
-                    sys.stdout.write('\r' + prompt + ''.join(line))
-                    sys.stdout.flush()
-
+                    return ''.join(line)
+                else:  # 一般字符
+                    if ord(c) >= 32:  # 可印字符
+                        line.insert(pos, c)
+                        pos += 1
+                        # 重新顯示整行
+                        sys.stdout.write('\r' + prompt + ''.join(line))
+                        sys.stdout.flush()
+            except KeyboardInterrupt:
+                raise
         return ''.join(line)
 
     def getch(self):
@@ -266,6 +324,15 @@ class CommandShell:
             print(f"Unknown command: {command_name}")
             return
 
+        if command_name == 'cd':
+            parser = self.commands['cd'][1]
+            try:
+                args = parser.parse_args(tokens[1:])
+                self.execute_cd(args)
+            except SystemExit:
+                pass
+            return
+
         module, parser = self.commands[command_name]
         try:
             args = parser.parse_args(tokens[1:])
@@ -282,26 +349,41 @@ class CommandShell:
         print("Type 'exit' to quit")
         print("Press '?' for help")
         print("Use TAB for auto-completion")
+        print(f"Current directory: {self.current_path}")
+        print("Press Ctrl-C to quit")
         
-        while True:
-            try:
-                command = self.get_input_with_immediate_help('> ')
-                
-                if command is None:  # Ctrl+D
-                    break
+        try:
+            while True:
+                try:
+                    prompt = self.get_prompt()
+                    command = self.get_input_with_immediate_help(prompt)
                     
-                if command.strip() == 'exit':
-                    break
-                
-                if command.strip():
-                    self.execute_command(command)
+                    if command is None:  # Ctrl+D
+                        break
+                        
+                    if command.strip() == 'exit':
+                        break
                     
-            except KeyboardInterrupt:
-                print("\nUse 'exit' to quit")
-            except Exception as e:
-                print(f"Error: {e}")
-
-        # 恢復終端設置
+                    if command.strip():
+                        self.execute_command(command)
+                        
+                except KeyboardInterrupt:
+                    if self.going_quit: 
+                        print("\n")
+                        break
+                    print("\nPress Ctrl-C again or Use 'exit' to quit")
+                    self.going_quit=True
+                    # 給使用者一個短暫的時間來按第二次 Ctrl-C
+                    try:
+                        self.getch()
+                    except KeyboardInterrupt:
+                        print("\nExiting...")
+                        break
+                except Exception as e:
+                    print(f"Error: {e}")
+        finally:
+            # 恢復終端設置
+            termios.tcsetattr(sys.stdin, termios.TCSADRAIN, self.old_settings)
         termios.tcsetattr(sys.stdin, termios.TCSADRAIN, self.old_settings)
 
 if __name__ == '__main__':
