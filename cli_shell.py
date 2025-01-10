@@ -320,6 +320,26 @@ class CommandShell:
         tokens = command_line.split()
         command_name = tokens[0]
 
+        # 處理 ".." 作為特殊的返回上層目錄命令
+        if command_name == "..":
+            try:
+                args = argparse.Namespace(path="..")
+                self.execute_cd(args)
+            except Exception as e:
+                print(f"Error changing directory: {e}")
+            return
+
+        # 檢查是否是目錄名稱
+        available_dirs = self.get_available_dirs()
+        if command_name in available_dirs:
+            # 如果輸入的是目錄名稱，自動使用 cd 命令
+            try:
+                args = argparse.Namespace(path=command_name)
+                self.execute_cd(args)
+            except Exception as e:
+                print(f"Error changing directory: {e}")
+            return
+
         if command_name not in self.commands:
             print(f"Unknown command: {command_name}")
             return
@@ -389,3 +409,4 @@ class CommandShell:
 if __name__ == '__main__':
     shell = CommandShell()
     shell.run()
+
