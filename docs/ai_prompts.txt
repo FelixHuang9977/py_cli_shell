@@ -1,0 +1,171 @@
+AI Prompts for CLI Shell Project Development Guide
+===============================================
+
+Project Overview
+--------------
+Create a flexible command-line interface (CLI) shell in Python that provides both interactive and batch operation modes. The shell should support hierarchical command organization, dynamic command loading, and user-friendly features like tab completion and command history.
+
+Core Requirements:
+1. Interactive command prompt with history
+2. Dynamic command loading from modules
+3. Directory-based command organization
+4. Built-in command system
+5. Batch mode execution
+6. Help system and documentation
+
+Development Approach Prompts
+--------------------------
+- Handle basic command execution
+- Support clean exit mechanisms
+Include error handling and basic user feedback."
+
+2. Command System Architecture
+"Design and implement a command system that:
+- Dynamically loads Python modules with 'cmd_' prefix
+- Uses argparse for command argument handling
+- Supports hierarchical organization in directories
+Ensure smooth user experience and proper error handling."
+
+4. Built-in Commands Development
+"Implement core built-in commands:
+- info: Display available commands in current directory
+- cd: Navigate directory structure
+Include proper argument parsing and help text.
+Show how to integrate with the main command system."
+
+5. Batch Mode Implementation
+"Add batch mode execution capability:
+- Support directory navigation in batch commands
+- Handle command execution and error reporting
+
+Feature-Specific Prompts
+Project Vision
+- Handles '..' for parent directory
+- Maintains command context per directory
+Include proper path handling and error checking."
+
+3. Tab Completion
+"Implement tab completion that:
+- Completes command names
+- Completes directory names
+- Shows multiple options when available
+- Handles partial matches
+Show the completion logic and user interface."
+
+4. Help System
+"Design a help system that:
+- Shows command descriptions
+- Displays usage information
+- 'info' command to show available commands in current directory
+- 'cd' command for directory navigation
+- Help system for command documentation
+Include argument parsing and comprehensive help text."
+
+5. Batch Mode Operations
+"Add batch mode support to allow:
+- Command execution via command-line arguments
+- Directory navigation in batch commands
+- Proper error handling and status reporting
+- Exit code management for scripting support"
+
+Feature Enhancement Prompts
+-------------------------
+
+1. Command Discovery
+"How can we implement a command discovery system that:
+- Recursively searches directories for commands
+- Handles naming conflicts appropriately
+- Provides clear feedback about available commands
+- Supports dynamic loading and unloading"
+
+2. User Interface Improvements
+"Enhance the user interface with:
+- Clear and consistent error messages
+- Intuitive command completion
+- Helpful suggestions for mistyped commands
+- Status information display"
+
+3. Command Execution
+"Implement a robust command execution system that:
+- Handles arguments correctly
+- Provides appropriate feedback
+- Manages errors gracefully
+
+Documentation Prompts
+-------------------
+
+1. User Documentation
+"Create comprehensive user documentation that covers:
+- Installation and setup
+- Usage instructions
+- Command system structure
+- API reference
+Include both English and Chinese versions."
+
+Enhancement Prompts
+-----------------
+
+1. New Features
+"Add new functionality such as:
+- Command aliases
+- Configuration system
+- Directory navigation
+- Batch mode operation
+- Error recovery"
+- Contribution guidelines"
+
+Testing Prompts
+-------------
+"Review the implementation for:
+1. Functionality Testing
+- Error handling completeness
+- Code organization
+- Performance considerations"
+
+2. Feature Verification
+"Verify that implemented features:
+- Meet requirements
+- Handle edge cases
+- Provide good user experience
+- Are well documented"
+
+Maintenance Prompts
+-----------------
+
+1. Bug Fixing
+"When addressing bugs:
+- Clearly describe the issue
+- Provide reproduction steps
+- Include relevant code sections
+- Explain the desired behavior"
+
+2. Feature Additions
+"When adding new features:
+- Describe the functionality
+- Outline implementation approach
+- Consider backwards compatibility
+- Include documentation updates"
+
+Usage Guidelines
+--------------
+- Include specific context and requirements
+- Reference existing code when relevant
+- Provide example scenarios
+- Specify expected outcomes
+- Include error handling considerations
+- Explain the desired behavior"
+
+2. Feature Additions
+"When adding new features:
+- Describe the functionality
+- Outline implementation approach
+- Consider backwards compatibility
+- Include documentation updates"
+
+Usage Guidelines
+--------------
+- Include specific context and requirements
+- Reference existing code when relevant
+- Provide example scenarios
+- Specify expected outcomes
+- Include error handling considerations

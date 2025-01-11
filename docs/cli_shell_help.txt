@@ -1,0 +1,301 @@
+CLI Shell Help Documentation
+======================
+==========================
+CLI Shell Documentation
+======================
+CLI Shell is a flexible command-line interface that supports both interactive and batch mode operations. It provides an extensible framework for managing and executing commands across different directories.
+
+CLI Shell is an interactive command-line interface that supports both interactive and batch mode operations. 
+It provides a hierarchical command structure with directory navigation capabilities.
+
+Usage
+-----
+1. Interactive Mode:
+   python cli_shell.py
+
+2. Batch Mode:
+   python cli_shell.py -c "command"
+
+Command Structure
+---------------
+Commands are organized in a hierarchical directory structure:
+- Root directory (cmd/)
+- Subdirectories containing related commands
+- Command modules (files starting with 'cmd_')
+
+Navigation
+---------
+   > info -a
+1. Interactive Mode:
+   $ python cli_shell.py
+
+2. Batch Mode:
+   $ python cli_shell.py -c "command [args]"
+   $ python cli_shell.py -c "directory command [args]"
+
+Navigation
+----------
+- Use 'cd directory' to change directory
+- Use '..' to go to parent directory
+- Type directory name directly to enter it
+- Use 'info' to list available commands in current directory
+
+Key Bindings
+-----------
+- Tab: Auto-complete commands and directories
+- ?: Show help for current context
+- Up/Down Arrows: Navigate command history
+- Ctrl+C: Exit (press twice)
+- Ctrl+D: Exit
+- Backspace: Delete character
+- Home/End: Move cursor to start/end of line
+
+Command Structure
+---------------
+Commands should be placed in the 'cmd' directory structure:
+cmd/
+  ├── cmd_command1.py
+  ├── cmd_command2.py
+  └── subdirectory/
+      └── cmd_command3.py
+
+Command Module Requirements
+-------------------------
+Each command module should:
+1. Start with 'cmd_' prefix
+2. Implement setup_parser() function
+3. Implement execute(args) function
+4. Include command description
+
+Example Command Module:
+    def setup_parser():
+        parser = argparse.ArgumentParser(description='Command description')
+        parser.add_argument('arg1', help='Argument description')
+        return parser
+
+    def execute(args):
+        # Command implementation
+        pass
+
+Built-in Commands
+---------------
+1. info
+   - Show available commands in current directory
+   - Options:
+     -a, --all: Show full details
+     -p, --path: Show command paths
+
+2. cd
+   - Change current directory
+   - Usage: cd <directory>
+   - Automatically available when subdirectories exist
+
+Exit Codes
+---------
+- 0: Successful execution
+- 1: Error during execution
+
+Examples
+--------
+1. Interactive Mode:
+   $ python cli_shell.py
+   cmd> info
+   cmd> utils
+   cmd/utils> calc 1 + 1
+
+2. Batch Mode:
+   $ python cli_shell.py -c "info"
+   $ python cli_shell.py -c "utils calc 1 + 1"
+   $ python cli_shell.py -c "network ping"
+
+Tips
+----
+1. Use tab completion to explore available commands
+2. Use '?' for context-sensitive help
+3. Commands are loaded dynamically from current directory
+4. Directory structure reflects command hierarchy
+5. Command history persists during session
+
+Batch Mode Examples
+-----------------
+1. Execute single command:
+   python cli_shell.py -c "info"
+
+2. Execute command in subdirectory:
+   python cli_shell.py -c "network ping"
+
+3. Execute command with parameters:
+   python cli_shell.py -c "utils calc 1 + 1"
+
+4. Navigate multiple levels:
+   python cli_shell.py -c "network tools ping"
+
+Exit Codes
+---------
+- 0: Command executed successfully
+- 1: Command failed or error occurred
+
+Directory Structure Example
+-------------------------
+cmd/
+├── cmd_hello.py
+├── network/
+│   ├── cmd_ping.py
+│   └── tools/
+│       └── cmd_traceroute.py
+└── utils/
+    ├── cmd_calc.py
+    └── cmd_time.py
+
+Auto-completion
+-------------
+1. Command names
+2. Directory names
+3. Command options
+4. Partial matches shown on double-tab
+
+Help System
+----------
+1. General help: Press '?'
+2. Command-specific help: <command> -h
+3. Context-sensitive completion
+
+Command Module Template
+---------------------
+# cmd_example.py
+import argparse
+
+def setup_parser():
+    parser = argparse.ArgumentParser(description='Command description')
+    parser.add_argument('arg', help='Argument help')
+    return parser
+
+def execute(args):
+    # Command implementation
+    pass
+
+Environment
+----------
+- Python 3.6 or later
+- Linux/Unix-like environment (uses termios)
+- Requires readline support
+
+Notes
+Overview
+--------
+CLI Shell is a flexible command-line interface that supports both interactive and batch mode operations. It provides an extensible framework for managing and executing commands across different directories.
+
+Features
+   - Real-time help with '?' key
+--------
+1. Interactive Mode
+   - Command history with up/down arrow navigation
+   - Tab completion for commands and directories
+   - Real-time help with '?' key
+   - Directory navigation
+   - Built-in command support
+2. Batch Mode
+   - Execute commands via command line arguments
+   - Support directory navigation in batch commands
+   - Return execution status
+
+3. Command System
+   - Dynamic command loading
+   - Hierarchical command structure
+   - Built-in command support
+----------
+1. Interactive Mode:
+   $ python cli_shell.py
+
+2. Batch Mode:
+   $ python cli_shell.py -c "command [args]"
+   $ python cli_shell.py -c "directory command [args]"
+
+Navigation
+----------
+- Use 'cd directory' to change directory
+- Use '..' to go to parent directory
+- Type directory name directly to enter it
+- Use 'info' to list available commands in current directory
+
+Key Bindings
+-----------
+- Tab: Auto-complete commands and directories
+- ?: Show help for current context
+- Up/Down Arrows: Navigate command history
+- Ctrl+C: Exit (press twice)
+- Ctrl+D: Exit
+- Backspace: Delete character
+- Home/End: Move cursor to start/end of line
+
+Command Structure
+---------------
+Commands should be placed in the 'cmd' directory structure:
+cmd/
+  ├── cmd_command1.py
+  ├── cmd_command2.py
+  └── subdirectory/
+      └── cmd_command3.py
+
+Command Module Requirements
+-------------------------
+Each command module should:
+1. Start with 'cmd_' prefix
+2. Implement setup_parser() function
+3. Implement execute(args) function
+4. Include command description
+
+Example Command Module:
+    def setup_parser():
+        parser = argparse.ArgumentParser(description='Command description')
+        parser.add_argument('arg1', help='Argument description')
+        return parser
+
+    def execute(args):
+        # Command implementation
+        pass
+
+Built-in Commands
+---------------
+1. info
+   - Show available commands in current directory
+   - Options:
+     -a, --all: Show full details
+     -p, --path: Show command paths
+
+2. cd
+   - Change current directory
+   - Usage: cd <directory>
+   - Automatically available when subdirectories exist
+
+Exit Codes
+---------
+- 0: Successful execution
+- 1: Error during execution
+
+Examples
+--------
+1. Interactive Mode:
+   $ python cli_shell.py
+   cmd> info
+   cmd> utils
+   cmd/utils> calc 1 + 1
+
+2. Batch Mode:
+   $ python cli_shell.py -c "info"
+   $ python cli_shell.py -c "utils calc 1 + 1"
+   $ python cli_shell.py -c "network ping"
+
+Tips
+----
+1. Use tab completion to explore available commands
+2. Use '?' for context-sensitive help
+3. Commands are loaded dynamically from current directory
+4. Directory structure reflects command hierarchy
+5. Command history persists during session
+2. Configuration file support
+3. Plugin system
+4. Command history persistence
+5. Custom completion handlers
+
+For more information, visit the project repository or contact the maintainer.

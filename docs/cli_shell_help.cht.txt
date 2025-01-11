@@ -1,0 +1,118 @@
+CLI Shell 說明文件
+=================
+
+概述
+----
+CLI Shell 是一個靈活的命令列介面，支援互動模式和批次模式操作。它提供了一個可擴展的框架，用於管理和執行不同目錄中的命令。
+
+功能特點
+-------
+1. 互動模式
+   - 使用上下方向鍵瀏覽命令歷史
+   - 使用 Tab 鍵自動完成命令和目錄
+   - 使用 '?' 鍵獲取即時幫助
+   - 目錄導航
+   - 內建命令支援
+
+2. 批次模式
+   - 通過命令行參數執行命令
+   - 支援批次命令中的目錄導航
+   - 返回執行狀態
+
+3. 命令系統
+   - 動態載入命令
+   - 階層式命令結構
+   - 內建命令支援
+   - 命令描述和幫助系統
+
+使用方法
+-------
+1. 互動模式：
+   $ python cli_shell.py
+
+2. 批次模式：
+   $ python cli_shell.py -c "命令 [參數]"
+   $ python cli_shell.py -c "目錄 命令 [參數]"
+
+導航操作
+-------
+- 使用 'cd 目錄' 切換目錄
+- 使用 '..' 返回上層目錄
+- 直接輸入目錄名進入該目錄
+- 使用 'info' 列出當前目錄可用的命令
+
+按鍵綁定
+-------
+- Tab：自動完成命令和目錄
+- ?：顯示當前上下文的幫助信息
+- 上/下方向鍵：瀏覽命令歷史
+- Ctrl+C：退出（需按兩次）
+- Ctrl+D：退出
+- Backspace：刪除字符
+- Home/End：移動游標到行首/行尾
+
+命令結構
+-------
+命令應放置在 'cmd' 目錄結構中：
+cmd/
+  ├── cmd_command1.py
+  ├── cmd_command2.py
+  └── subdirectory/
+      └── cmd_command3.py
+
+命令模組要求
+----------
+每個命令模組必須：
+1. 以 'cmd_' 為前綴
+2. 實現 setup_parser() 函數
+3. 實現 execute(args) 函數
+4. 包含命令描述
+
+命令模組範例：
+    def setup_parser():
+        parser = argparse.ArgumentParser(description='命令描述')
+        parser.add_argument('arg1', help='參數描述')
+        return parser
+
+    def execute(args):
+        # 命令實現
+        pass
+
+內建命令
+-------
+1. info
+   - 顯示當前目錄中可用的命令
+   - 選項：
+     -a, --all：顯示完整詳細信息
+     -p, --path：顯示命令路徑
+
+2. cd
+   - 切換當前目錄
+   - 用法：cd <目錄>
+   - 當存在子目錄時自動可用
+
+退出碼
+-----
+- 0：執行成功
+- 1：執行出錯
+
+使用範例
+-------
+1. 互動模式：
+   $ python cli_shell.py
+   cmd> info
+   cmd> utils
+   cmd/utils> calc 1 + 1
+
+2. 批次模式：
+   $ python cli_shell.py -c "info"
+   $ python cli_shell.py -c "utils calc 1 + 1"
+   $ python cli_shell.py -c "network ping"
+
+使用技巧
+-------
+1. 使用 Tab 鍵探索可用命令
+2. 使用 '?' 獲取上下文相關幫助
+3. 命令會從當前目錄動態載入
+4. 目錄結構反映命令層次
+5. 命令歷史在會話期間保持
