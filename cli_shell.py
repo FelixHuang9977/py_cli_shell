@@ -6,12 +6,15 @@ import glob
 import argparse
 import termios
 import tty
+import subprocess
 from typing import Dict, List
 
 class CommandShell:
     def __init__(self):
         self.commands: Dict[str, tuple] = {}  # 存儲命令名稱和對應的模組
         self.current_path = 'cmd'  # 當前目錄路徑
+        # 添加內建命令
+        self.add_builtin_commands()
         self.load_commands()
         self.setup_readline()
         # 保存原始的終端設置
@@ -23,6 +26,188 @@ class CommandShell:
         # 命令歷史
         self.history = []
         self.history_index = 0
+
+    def add_builtin_commands(self):
+        """添加內建命令"""
+        # 添加 info 命令
+        info_parser = argparse.ArgumentParser(description='[built-in] Show information about commands in current directory')
+        info_parser.add_argument('-a', '--all', action='store_true',
+                            help='Show full path and description')
+        info_parser.add_argument('-p', '--path', action='store_true',
+                            help='Show command path')
+        self.commands['info'] = (None, info_parser)
+
+
+    def find_commands_in_current_dir(self, base_path=None, prefix=''):
+        """搜尋當前目錄及其子目錄中的所有命令"""
+        if base_path is None:
+            base_path = self.current_path
+            
+        commands = []
+        
+        try:
+            items = [item for item in os.listdir(base_path) 
+                    if item != '__pycache__']
+        except OSError:
+            return commands
+
+        for item in sorted(items):
+            full_path = os.path.join(base_path, item)
+            
+            if os.path.isdir(full_path):
+                sub_commands = self.find_commands_in_current_dir(full_path, f"{prefix}{item}/")
+                commands.extend(sub_commands)
+                
+            elif item.startswith('cmd_') and item.endswith('.py'):
+                command_name = item[4:-3]
+                if prefix:
+                    commands.append((f"{prefix}{command_name}", full_path))
+                else:
+                    commands.append((command_name, full_path))
+                
+        return commands
+
+    def execute_info(self, args):
+        """執行 info 命令"""
+        commands = self.find_commands_in_current_dir()
+        
+        # 添加內建命令（如果在當前目錄可用）
+        if 'info' in self.commands:
+            commands.append(('info', 'Built-in command'))
+        if 'cd' in self.commands:
+            commands.append(('cd', 'Built-in command'))
+        if 'list' in self.commands:
+            commands.append(('list', 'Built-in command'))
+        
+        if not commands:
+            print("\nNo commands available in current directory")
+            return
+            
+        # 計算最長命令名稱的長度
+        max_cmd_length = max(len(cmd[0]) for cmd in commands) if commands else 30
+        
+        # 獲取當前目錄的相對路徑
+        current_rel_path = os.path.relpath(self.current_path, 'cmd')
+        if current_rel_path == '.':
+            current_rel_path = 'cmd'
+        else:
+            current_rel_path = f'cmd/{current_rel_path}'
+        
+        print(f"\nCommands in {current_rel_path}:")
+        
+        if args.all:
+            # 顯示完整資訊
+            for cmd_name, cmd_path in sorted(commands):
+                if cmd_path == 'Built-in command':
+                    desc = "Built-in command"
+                    print(f"  {cmd_name:<{max_cmd_length}} - {desc}")
+                    print(f"    Path: Built-in")
+                    print()
+                else:
+                    desc = self.get_command_description(cmd_path)
+                    print(f"  {cmd_name:<{max_cmd_length}} - {desc}")
+                    print(f"    Path: {cmd_path}")
+                    print()
+        elif args.path:
+            # 顯示命令和路徑
+            for cmd_name, cmd_path in sorted(commands):
+                print(f"  {cmd_name:<{max_cmd_length}} - {cmd_path}")
+        else:
+            # 簡單列表
+            for cmd_name, cmd_path in sorted(commands):
+                if cmd_path == 'Built-in command':
+                    desc = "Built-in command"
+                else:
+                    desc = self.get_command_description(cmd_path)
+                print(f"  {cmd_name:<{max_cmd_length}} - {desc}")
+
+    def find_all_commands(self, base_path='cmd', prefix=''):
+        """遞迴搜尋所有命令"""
+        commands = []
+    
+        try:
+            # 獲取目錄下的所有項目（排除 __pycache__）
+            items = [item for item in os.listdir(base_path) 
+                    if item != '__pycache__']
+        except OSError:
+            return commands
+
+        # 遍歷所有項目
+        for item in sorted(items):
+            full_path = os.path.join(base_path, item)
+        
+            # 如果是目錄，遞迴搜尋
+            if os.path.isdir(full_path):
+                sub_commands = self.find_all_commands(full_path, f"{prefix}{item}/")
+                commands.extend(sub_commands)
+            
+            # 如果是命令檔案
+            elif item.startswith('cmd_') and item.endswith('.py'):
+                command_name = item[4:-3]  # 移除 'cmd_' 前綴和 '.py' 後綴
+                if prefix:
+                    commands.append((f"{prefix}{command_name}", full_path))
+                else:
+                    commands.append((command_name, full_path))
+            
+        return commands
+
+    def get_command_description(self, filepath):
+        """從命令檔案中獲取描述"""
+        try:
+            with open(filepath, 'r', encoding='utf-8') as f:
+                content = f.read()
+                # 尋找 description 參數
+                import re
+                match = re.search(r'description=[\'"]([^\'"]+)[\'"]', content)
+                if match:
+                    return match.group(1)
+        except Exception:
+            pass
+        return "No description available"
+
+    def execute_list(self, args):
+        """執行 list 命令"""
+        commands = self.find_all_commands()
+        
+        # 添加內建命令
+        commands.append(('list', 'Built-in command'))
+        if any(os.path.isdir(os.path.join(self.current_path, item)) 
+            for item in os.listdir(self.current_path) 
+            if item != '__pycache__'):
+            commands.append(('cd', 'Built-in command'))
+        
+        # 計算最長命令名稱的長度
+        max_cmd_length = max(len(cmd[0]) for cmd in commands) if commands else 30
+    
+        if args.all:
+            # 顯示完整資訊
+            print("\nAvailable commands:")
+            for cmd_name, cmd_path in sorted(commands):
+                if cmd_path == 'Built-in command':
+                    desc = "Built-in command"
+                    print(f"  {cmd_name:<{max_cmd_length}} - {desc}")
+                    print(f"    Path: Built-in")
+                    print()
+                else:
+                    desc = self.get_command_description(cmd_path)
+                    print(f"  {cmd_name:<{max_cmd_length}} - {desc}")
+                    print(f"    Path: {cmd_path}")
+                    print()
+        elif args.path:
+            # 顯示命令和路徑
+            print("\nAvailable commands:")
+            for cmd_name, cmd_path in sorted(commands):
+                print(f"  {cmd_name:<{max_cmd_length}} - {cmd_path}")
+        else:
+            # 簡單列表
+            print("\nAvailable commands:")
+            for cmd_name, cmd_path in sorted(commands):
+                if cmd_path == 'Built-in command':
+                    desc = "Built-in command"
+                else:
+                    desc = self.get_command_description(cmd_path)
+                print(f"  {cmd_name:<{max_cmd_length}} - {desc}")			
+
 
     def add_to_history(self, command: str):
         """添加命令到歷史記錄"""
@@ -39,7 +224,16 @@ class CommandShell:
             return f'cmd/{rel_path}> '
     def load_commands(self):
         """載入當前目錄下的命令模組"""
+        # 保存內建命令
+        builtin_commands = {
+            'info': self.commands.get('info')
+        }
+        
+        # 清除命令
         self.commands.clear()
+        
+        # 恢復內建命令
+        self.commands.update({k: v for k, v in builtin_commands.items() if v is not None})
         
         # 獲取當前目錄下的所有項目
         items = [item for item in os.listdir(self.current_path) 
@@ -409,7 +603,8 @@ class CommandShell:
         # 處理 ".." 作為特殊的返回上層目錄命令
         if command_name == "..":
             try:
-                args = argparse.Namespace(path="..")
+                args = argparse.Namespace()
+                args.path = ".."  # 明確設置 path 屬性
                 self.execute_cd(args)
             except Exception as e:
                 print(f"Error changing directory: {e}")
@@ -420,7 +615,8 @@ class CommandShell:
         if command_name in available_dirs:
             # 如果輸入的是目錄名稱，自動使用 cd 命令
             try:
-                args = argparse.Namespace(path=command_name)
+                args = argparse.Namespace()
+                args.path = command_name  # 明確設置 path 屬性
                 self.execute_cd(args)
             except Exception as e:
                 print(f"Error changing directory: {e}")
@@ -438,7 +634,16 @@ class CommandShell:
             except SystemExit:
                 pass
             return
+        elif command_name == 'info':
+            parser = self.commands['info'][1]
+            try:
+                args = parser.parse_args(tokens[1:])
+                self.execute_info(args)
+            except SystemExit:
+                pass
+            return
 
+        # 處理一般命令
         module, parser = self.commands[command_name]
         try:
             args = parser.parse_args(tokens[1:])
@@ -493,7 +698,16 @@ class CommandShell:
             termios.tcsetattr(sys.stdin, termios.TCSADRAIN, self.old_settings)
         termios.tcsetattr(sys.stdin, termios.TCSADRAIN, self.old_settings)
 
+def reset_vt100():
+    command = ['reset']
+    try:
+        result = subprocess.run(command, capture_output=True, text=True)
+        print(result.stdout)
+    except Exception as e:
+        print(f"Error: {str(e)}")
+        
 if __name__ == '__main__':
+    reset_vt100()
     shell = CommandShell()
     shell.run()
 
