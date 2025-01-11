@@ -370,7 +370,7 @@ class CommandShell:
         
         # 如果沒有輸入，顯示所有可用命令和目錄
         if not tokens:
-            print("Available commands: (help.2.a)")
+            print("Available commands:")
             for cmd in sorted(self.commands.keys()):
                 if cmd == 'cd':
                     pass

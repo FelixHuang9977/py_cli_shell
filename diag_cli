@@ -4,6 +4,22 @@ EXE_FILE="$(realpath $0)"
 DIR="$(dirname $EXE_FILE)"
 cd $DIR
 
+#check necessary tools
+#sudo apt-get -y install i2c-tools
+#ACPI:
+#  acpidump, iasl
+#SMBIOS table:
+#  dmidecode
+#
+#python-serial (用於 UART)
+#nvme-cli (用於 NVMe)
+#smartmontools (用於 SMART)
+#ipmitool (用於 IPMI)
+#lm-sensors (用於 CPU 溫度)
+#usbutils (用於 USB)
+#i2c/smbus
+#sudo apt-get install build-essential
+
 if [[ $1 == help ]] || [[ -z $1 ]]; then
     echo "Usage:"
     echo "$0 --help"
