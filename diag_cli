@@ -1,0 +1,24 @@
+#!/bin/bash
+EXE_FILE="$(realpath $0)"
+DIR="$(dirname $EXE_FILE)"
+
+if [[ $1 == help ]] || [[ -z $1 ]]; then
+    echo "Usage:"
+    echo "$0 --help"
+    echo "$0 list"
+    echo "$0 categories"
+    echo "$0 run cpu"
+    echo "$0 run cpu/test_cpu_core.py"
+    echo
+    echo "Folder:"
+    echo "  config folder for testcase setting"
+    echo "  logs folder for testcase debug logs and test summary"
+    echo
+    echo "Testcase:   $(find testcase -type d -name "[a-zA-Z]*" | sed -e 's/^testcase[\/]*//g'| xargs)"
+    echo
+fi
+
+
+$DIR/.venv/bin/python ./diag_cli.py $@
+
+[[ $1 == run ]] && echo "last log:" && ls -lrt logs | tail -n 2

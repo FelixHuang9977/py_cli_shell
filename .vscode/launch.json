@@ -4,14 +4,33 @@
     // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
     "version": "0.2.0",
     "configurations": [
-    
         {
-            "name": "Python Debugger: Current File",
+            "name": "CLI shell",
             "type": "debugpy",
             "request": "launch",
             "program": "cli_shell.py",
             "console": "integratedTerminal",
             "preLaunchTask": "reset_terminal"
+        },
+        {
+            "name": "List",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "diag_cli.py",
+            "console": "integratedTerminal",
+            "args": [
+                "list"
+            ]
+        },
+        {
+            "name": "run all",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "diag_cli.py",
+            "console": "integratedTerminal",
+            "args": [
+                "run"
+            ]
         }
     ]
 }

@@ -1,0 +1,326 @@
+Diag CLI 工具安裝與使用指南
+=========================
+Diagnostic CLI Tool User Guide
+=============================
+
+1. 安裝步驟
+-----------------
+# 安裝必要套件
+sudo apt-get update
+sudo apt-get install python3-pip python3-psutil
+
+# 安裝 diag_cli
+pip install diag-cli
+
+# 驗證安裝
+diag_cli --version
+
+
+2. 基本使用方法
+1. 基本用法
+-----------
+命令格式：
+    ./diag_cli [OPTIONS] COMMAND [ARGS]
+
+全局選項：
+    --verbose         啟用詳細輸出模式
+    --test-dir PATH  指定測試用例目錄
+
+2. 命令列表
+-----------
+
+2.1 categories - 列出所有測試類別
+--------------------------------
+命令：
+    ./diag_cli categories
+
+預期輸出：
+    Available test categories:
+      - cpu
+      - usb
+
+範例：
+    $ ./diag_cli categories
+    Available test categories:
+      - cpu
+      - usb
+
+2.2 list - 列出測試項目
+----------------------
+命令：
+    ./diag_cli list [CATEGORY]
+
+參數：
+    CATEGORY    可選，指定要列出的測試類別
+
+範例 1 - 列出所有測試：
+    $ ./diag_cli list
+    cpu/test_cpu_core.py
+    cpu/test_cpu_info.py
+    usb/test_usb_info.py
+
+範例 2 - 列出特定類別的測試：
+    $ ./diag_cli list cpu
+    test_cpu_core.py
+    test_cpu_info.py
+
+2.3 run - 執行測試
+-----------------
+# 查看幫助
+diag_cli --help
+
+# 查看版本
+diag_cli --version
+
+# 查看可用命令
+diag_cli list
+
+
+3. 主要功能
+-----------------
+status  : 檢查系統狀態
+test    : 執行測試案例
+monitor : 監控系統
+report  : 生成報告
+
+
+4. 常用命令範例
+-----------------
+# 檢查系統狀態
+diag_cli status
+
+# 執行所有測試
+diag_cli test --all
+
+# 監控系統
+diag_cli monitor
+
+# 生成報告
+diag_cli report
+
+
+5. 配置設定
+-----------------
+配置文件位置：/etc/diag_cli/config.yaml
+用戶配置：~/.config/diag_cli/config.yaml
+
+
+6. 常見問題
+-----------------
+問題：Command not found
+解決：確認 PATH 環境變數包含 pip 安裝路徑
+
+問題：Permission denied
+解決：使用 sudo 執行命令
+
+
+7. 使用建議
+-----------------
+- 定期執行系統檢查
+- 保存測試報告
+- 設置自動監控
+- 定期更新工具
+命令：
+    ./diag_cli run [OPTIONS] TEST_PATH
+
+選項：
+    --stress         啟用壓力測試模式
+    --junit-xml PATH 生成 JUnit XML 格式報告
+
+範例 1 - 執行單個測試：
+    $ ./diag_cli run cpu/test_cpu_core.py
+    
+    預期輸出：
+    ==================================================
+    CPU Core Information:
+    --------------------------------------------------
+    Logical CPU cores (包含超執行緒):
+      - Current: 8
+      - Expected: 8
+
+    Physical CPU cores (實體核心數):
+      - Current: 4
+      - Expected: 4
+
+    CPU Sockets (CPU 插槽數):
+      - Current: 1
+      - Expected: 1
+
+    Threads per core (每核心執行緒數): 2.0
+    ==================================================
+
+    CPU Model Information:
+    Model name: Intel(R) Core(TM) i7-1065G7 CPU @ 1.30GHz
+
+    CPU Core Utilization:
+    --------------------------------------------------
+    Core 0: 5.2%
+    Core 1: 3.1%
+    Core 2: 4.7%
+    Core 3: 2.8%
+    Core 4: 1.9%
+    Core 5: 2.3%
+    Core 6: 3.5%
+    Core 7: 1.6%
+
+範例 2 - 執行壓力測試：
+    $ ./diag_cli run --stress cpu/test_cpu_core.py
+
+範例 3 - 生成 XML 報告：
+    $ ./diag_cli run --junit-xml report.xml cpu/test_cpu_core.py
+
+2.4 config - 顯示當前配置
+------------------------
+命令：
+    ./diag_cli config
+
+預期輸出：
+    Test directory: /path/to/testcase
+    Verbose mode: False
+
+3. 配置文件
+-----------
+
+3.1 CPU 測試配置 (config/cpu_config.json)
+--------------------------------------
+{
+    "expected_cores": {
+        "logical_cores": 4,
+        "physical_cores": 2,
+        "sockets": 1
+    }
+}
+
+3.2 日誌配置 (config/log_config.json)
+---------------------------------
+{
+    "version": 1,
+    "disable_existing_loggers": false,
+    "handlers": {
+        "console": {
+            "class": "logging.StreamHandler",
+            "level": "INFO"
+        },
+        "file": {
+            "class": "logging.FileHandler",
+            "level": "DEBUG",
+            "filename": "logs/test_execution.log"
+        }
+    },
+    "loggers": {
+        "": {
+            "level": "DEBUG",
+            "handlers": ["console", "file"]
+        }
+    }
+}
+
+4. 日誌系統
+-----------
+位置：
+    logs/test_execution_YYYYMMDD_HHMMSS.log
+
+日誌級別：
+    ERROR   - 錯誤信息
+    WARNING - 警告信息
+    INFO    - 一般信息
+    DEBUG   - 調試信息
+
+範例日誌輸出：
+    2024-03-20 10:15:30 [INFO] Starting CPU core test
+    2024-03-20 10:15:30 [DEBUG] Loaded configuration: {'logical_cores': 4}
+    2024-03-20 10:15:31 [INFO] CPU core count test completed successfully
+
+5. 常見問題與解決方案
+--------------------
+
+5.1 找不到測試文件
+錯誤信息：
+    Error: Test 'xxx' not found.
+解決方案：
+    1. 確認測試文件路徑是否正確
+    2. 使用 list 命令檢查可用的測試
+    3. 確保測試文件在正確的目錄中
+
+5.2 配置文件錯誤
+錯誤信息：
+    Warning: Config file not found
+解決方案：
+    1. 確認配置文件存在
+    2. 檢查 JSON 格式是否正確
+    3. 確保配置文件在 config 目錄中
+
+5.3 日誌目錄權限問題
+錯誤信息：
+    Error: Permission denied
+解決方案：
+    1. 確保 logs 目錄存在
+    2. 檢查目錄權限
+    3. 使用適當的權限創建目錄：
+       mkdir -p logs
+       chmod 755 logs
+
+6. 使用範例場景
+--------------
+
+場景 1：首次運行測試
+步驟：
+    1. 創建必要的目錄和配置：
+       mkdir -p config logs
+       
+    2. 設置 CPU 配置：
+       echo '{
+           "expected_cores": {
+               "logical_cores": 4,
+               "physical_cores": 2,
+               "sockets": 1
+           }
+       }' > config/cpu_config.json
+       
+    3. 運行測試：
+       ./diag_cli run cpu/test_cpu_core.py
+
+場景 2：檢查特定類別的所有測試
+步驟：
+    1. 列出類別：
+       ./diag_cli categories
+       
+    2. 檢查特定類別的測試：
+       ./diag_cli list cpu
+       
+    3. 運行該類別的測試：
+       ./diag_cli run cpu/test_cpu_core.py
+       ./diag_cli run cpu/test_cpu_info.py
+
+場景 3：使用詳細輸出模式進行故障排除
+步驟：
+    1. 啟用詳細模式運行：
+       ./diag_cli --verbose run cpu/test_cpu_core.py
+       
+    2. 檢查日誌文件：
+       cat logs/test_execution_<timestamp>.log
+
+7. 目錄結構
+----------
+.
+├── config/
+│   ├── cpu_config.json    # CPU 測試配置
+│   └── log_config.json    # 日誌配置
+├── logs/                  # 日誌文件目錄
+│   └── test_execution_*.log
+├── testcase/             # 測試用例目錄
+│   ├── cpu/
+│   │   ├── test_cpu_core.py
+│   │   └── test_cpu_info.py
+│   └── usb/
+│       └── test_usb_info.py
+├── diag_cli              # 主程序
+└── requirements.txt      # 依賴包列表
+
+8. 注意事項
+----------
+1. 在運行測試前，確保所有必要的配置文件都已正確設置
+2. 定期檢查日誌文件以監控測試執行情況
+3. 使用 --verbose 選項可以獲得更詳細的輸出
+4. 對於長時間運行的測試，建議使用 --junit-xml 選項生成報告
+5. 確保系統有足夠的權限執行所有測試項目

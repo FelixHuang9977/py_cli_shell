@@ -1,0 +1,79 @@
+CPU 測試案例執行指南
+==================
+
+1. 可用的測試案例
+-----------------
+test_cpu_count     : 測試 CPU 核心數
+test_cpu_frequency : 測試 CPU 頻率
+test_cpu_load      : 測試 CPU 負載
+test_cpu_stats     : 測試 CPU 統計
+test_cpu_stress    : 測試 CPU 壓力測試
+
+
+2. 執行測試命令
+-----------------
+# 執行所有 CPU 測試
+diag_cli cpu test --all
+
+# 執行單一測試
+diag_cli cpu test --case test_cpu_load
+
+# 執行壓力測試
+diag_cli cpu test --case test_cpu_stress --duration 300
+
+
+3. 預期輸出範例
+-----------------
+# CPU 核心數測試
+> diag_cli cpu test --case test_cpu_count
+輸出：
+Physical cores: 4
+Logical cores: 8
+
+# CPU 負載測試
+> diag_cli cpu test --case test_cpu_load
+輸出：
+Current load: 25%
+1min load: 1.5
+5min load: 1.2
+15min load: 1.0
+
+
+4. 測試選項
+-----------------
+--duration : 設定測試時間（秒）
+--verbose  : 顯示詳細資訊
+--report   : 生成測試報告
+--timeout  : 設定超時時間
+
+
+5. 注意事項
+-----------------
+- 壓力測試可能導致系統負載增加
+- 長時間測試注意散熱
+- 建議在系統負載低時測試
+- 注意記錄測試結果
+
+
+6. 故障排除
+-----------------
+錯誤：High temperature
+解決：檢查散熱系統
+
+錯誤：System too busy
+解決：降低系統負載後重試
+
+
+7. 測試流程建議
+-----------------
+1. 先執行基本測試：
+   diag_cli cpu test --case test_cpu_count
+
+2. 檢查負載狀況：
+   diag_cli cpu test --case test_cpu_load
+
+3. 執行效能測試：
+   diag_cli cpu test --case test_cpu_frequency
+
+4. 最後執行壓力測試：
+   diag_cli cpu test --case test_cpu_stress

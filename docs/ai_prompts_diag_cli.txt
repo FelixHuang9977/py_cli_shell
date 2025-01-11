@@ -1,0 +1,117 @@
+Project: Diagnostic CLI Tool Development
+
+Objective:
+Create a command-line diagnostic tool that can execute and manage system tests, focusing on hardware components like CPU and USB.
+
+Key Components:
+
+1. CLI Structure
+- Create a command-line interface using Click framework
+- Implement main commands: categories, list, run, config, show
+- Support global options: --verbose, --test-dir
+
+2. Test Management
+- Organize tests by categories (e.g., cpu, usb)
+- Support test discovery and listing
+- Enable test execution with various options
+- Generate detailed test reports
+
+3. Configuration System
+- Implement configuration file management
+- Support test-specific configurations
+- Enable logging configuration
+
+4. Logging System
+- Create comprehensive logging mechanism
+- Support different log levels
+- Generate test execution summaries
+- Save logs with timestamps
+
+Development Prompts:
+
+1. Basic CLI Framework
+"Create a Python CLI tool using Click framework with basic commands for test management"
+
+2. Test Organization
+"Implement a test discovery system that organizes tests by categories (cpu, usb, etc.)"
+
+3. Test Execution
+"Create a test execution system that can run tests and collect results using pytest"
+
+4. Configuration Management
+"Implement a configuration system for managing test parameters and expectations"
+
+5. Logging System
+"Create a logging system that generates both console output and file-based logs"
+
+6. Test Result Collection
+"Implement a test result collector that captures test outcomes and generates summaries"
+
+7. Documentation
+"Create comprehensive documentation including usage guides and examples"
+
+Implementation Guidelines:
+
+1. Command Structure:
+- categories: List available test categories
+- list: Show available tests, optionally filtered by category
+- run: Execute specified tests with options
+- config: Display current configuration
+- show: Display test results
+
+2. Test Organization:
+- Group tests by hardware component
+- Use consistent naming conventions (test_*.py)
+- Support test discovery in subdirectories
+
+3. Configuration:
+- Use JSON format for configurations
+- Support multiple configuration files
+- Enable runtime configuration changes
+
+4. Logging:
+- Include timestamp in log files
+- Support multiple log levels
+- Generate human-readable summaries
+- Save test results in structured format
+
+5. Result Collection:
+- Track passed/failed/skipped tests
+- Capture test duration
+- Include error details
+- Generate formatted summaries
+
+Expected Outputs:
+1. Executable CLI tool
+2. Configuration files
+3. Log files and test summaries
+4. Documentation and usage guides
+
+File Structure:
+.
+├── config/
+│   ├── cpu_config.json
+│   └── log_config.json
+├── logs/
+│   └── test_execution_*.log
+├── testcase/
+│   ├── cpu/
+│   │   └── test_*.py
+│   └── usb/
+│       └── test_*.py
+├── docs/
+│   └── *.txt
+└── diag_cli
+
+Usage Examples:
+1. List categories:
+   ./diag_cli categories
+
+2. List tests:
+   ./diag_cli list cpu
+
+3. Run test:
+   ./diag_cli run cpu/test_cpu_core.py
+
+4. Run with options:
+   ./diag_cli --verbose run --stress cpu/test_cpu_core.py

@@ -1,0 +1,54 @@
+USB 測試案例執行指南
+==================
+
+1. 可用的測試案例
+-----------------
+test_usb_list    : 測試 USB 設備列表
+test_usb_details : 測試 USB 詳細資訊
+test_usb_ports   : 測試 USB 端口狀態
+test_usb_storage : 測試 USB 儲存設備
+test_usb_power   : 測試 USB 電源管理
+
+
+2. 執行測試命令
+-----------------
+# 執行所有 USB 測試
+diag_cli usb test --all
+
+# 執行單一測試
+diag_cli usb test --case test_usb_list
+
+# 執行詳細測試
+diag_cli usb test --verbose
+
+
+3. 預期輸出範例
+-----------------
+# USB 列表測試
+> diag_cli usb test --case test_usb_list
+輸出：
+Bus 002 Device 001: ID 1d6b:0003 USB 3.0 Hub
+Bus 001 Device 002: ID 8087:0024 USB 2.0 Hub
+
+# USB 端口測試
+> diag_cli usb test --case test_usb_ports
+輸出：
+Port 1: Available
+Port 2: In Use
+
+
+4. 注意事項
+-----------------
+- 需要 root 權限
+- 準備測試用 USB 設備
+- 避免測試時拔除設備
+- 注意資料安全
+
+
+5. 故障排除
+-----------------
+錯誤：Permission denied
+解決：使用 sudo 執行
+
+錯誤：Device not found
+解決：檢查設備連接

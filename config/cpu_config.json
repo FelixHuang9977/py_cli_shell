@@ -1,0 +1,7 @@
+{
+    "expected_cores": {
+        "logical_cores": 4,
+        "physical_cores": 2,
+        "sockets": 1
+    }
+}

@@ -54,6 +54,9 @@ class CommandShell:
         except OSError:
             return commands
 
+        # 使用正則表達式匹配 cmd_xxx.py 格式的檔案
+        cmd_pattern = re.compile(r'^cmd_[a-zA-Z0-9_]+\.py$')
+
         for item in sorted(items):
             full_path = os.path.join(base_path, item)
             
@@ -61,7 +64,8 @@ class CommandShell:
                 sub_commands = self.find_commands_in_current_dir(full_path, f"{prefix}{item}/")
                 commands.extend(sub_commands)
                 
-            elif item.startswith('cmd_') and item.endswith('.py'):
+            # 使用正則表達式檢查檔案名
+            elif os.path.isfile(full_path) and cmd_pattern.match(item):
                 command_name = item[4:-3]
                 if prefix:
                     commands.append((f"{prefix}{command_name}", full_path))
@@ -135,6 +139,9 @@ class CommandShell:
         except OSError:
             return commands
 
+        # 使用正則表達式匹配 cmd_xxx.py 格式的檔案
+        cmd_pattern = re.compile(r'^cmd_[a-zA-Z0-9_]+\.py$')
+
         # 遍歷所有項目
         for item in sorted(items):
             full_path = os.path.join(base_path, item)
@@ -145,7 +152,7 @@ class CommandShell:
                 commands.extend(sub_commands)
             
             # 如果是命令檔案
-            elif item.startswith('cmd_') and item.endswith('.py'):
+            elif os.path.isfile(full_path) and cmd_pattern.match(item):
                 command_name = item[4:-3]  # 移除 'cmd_' 前綴和 '.py' 後綴
                 if prefix:
                     commands.append((f"{prefix}{command_name}", full_path))
@@ -248,13 +255,16 @@ class CommandShell:
         # 只有在有子目錄的情況下才添加 cd 命令
         if has_subdirs:
             self.commands['cd'] = (None, self.create_cd_parser())
+        
+        # 使用正則表達式匹配 cmd_xxx.py 格式的檔案
+        cmd_pattern = re.compile(r'^cmd_[a-zA-Z0-9_]+\.py$')
             
         # 載入命令模組
         for item in items:
             full_path = os.path.join(self.current_path, item)
             
             # 如果是 Python 檔案且以 cmd_ 開頭
-            if os.path.isfile(full_path) and item.startswith('cmd_') and item.endswith('.py'):
+            if os.path.isfile(full_path) and cmd_pattern.match(item):
                 module_name = os.path.splitext(item)[0]
                 command_name = module_name[4:]  # 移除 'cmd_' 前綴
 
@@ -696,7 +706,7 @@ class CommandShell:
         return True
 
 
-    def reset_vt100():
+    def reset_vt100(self):
         command = ['reset']
         try:
             result = subprocess.run(command, capture_output=True, text=True)
