@@ -10,9 +10,10 @@ import subprocess
 from typing import Dict, List
 
 class CommandShell:
-    def __init__(self):
+    def __init__(self, batch_command=None):
         self.commands: Dict[str, tuple] = {}  # 存儲命令名稱和對應的模組
         self.current_path = 'cmd'  # 當前目錄路徑
+        self.batch_command = batch_command  # 批次模式的命令
         # 添加內建命令
         self.add_builtin_commands()
         self.load_commands()
@@ -26,6 +27,8 @@ class CommandShell:
         # 命令歷史
         self.history = []
         self.history_index = 0
+        # flags
+        self.is_batch_mode=False
 
     def add_builtin_commands(self):
         """添加內建命令"""
@@ -289,7 +292,8 @@ class CommandShell:
                 print(f"Directory not found: {target_path}")
                 return
 
-        print(f"Current directory: {self.current_path}")
+        if not self.is_batch_mode:
+            print(f"Current directory: {self.current_path}")
         self.load_commands()  # 重新載入當前目錄的命令
 
     def get_available_dirs(self) -> List[str]:
@@ -654,15 +658,75 @@ class CommandShell:
         except Exception as e:
             print(f"Error executing command: {e}")
 
+    def execute_batch_command(self, command_line: str) -> bool:
+        """執行批次命令
+        
+        Returns:
+            bool: 命令執行是否成功
+        """
+        # 分割命令
+        parts = command_line.strip().split()
+        if not parts:
+            return False
+
+        current = 0
+        while current < len(parts):
+            # 檢查是否是目錄
+            if os.path.isdir(os.path.join(self.current_path, parts[current])):
+                # 嘗試進入目錄
+                try:
+                    args = argparse.Namespace()
+                    args.path = parts[current]
+                    self.execute_cd(args)
+                    current += 1
+                    continue
+                except Exception as e:
+                    print(f"Error changing directory: {e}")
+                    return False
+
+            # 構建剩餘的命令
+            remaining_command = ' '.join(parts[current:])
+            try:
+                self.execute_command(remaining_command)
+                return True
+            except Exception as e:
+                print(f"Error executing command: {e}")
+                return False
+
+        return True
+
+
+    def reset_vt100():
+        command = ['reset']
+        try:
+            result = subprocess.run(command, capture_output=True, text=True)
+            print(result.stdout)
+        except Exception as e:
+            print(f"Error: {str(e)}")
+    
     def run(self):
         """運行命令列介面"""
-        print("Welcome to CLI Shell")
-        print("Type 'exit' to quit")
-        print("Press '?' for help")
-        print("Use TAB for auto-completion")
-        print("Use UP/DOWN arrow keys for command history")
-        print(f"Current directory: {self.current_path}")
-        print("Press Ctrl-C to quit")
+
+        # 如果是批次模式
+        if self.batch_command:
+            self.is_batch_mode=True
+            success = self.execute_batch_command(self.batch_command)
+            # 恢復終端設置
+            termios.tcsetattr(sys.stdin, termios.TCSADRAIN, self.old_settings)
+            # 根據執行結果設置退出碼
+            sys.exit(0 if success else 1)
+            return
+        else:
+            self.is_batch_mode=False
+            self.reset_vt100()
+
+        # 互動模式
+        print(f"Welcome to CLI Shell: CWD:{self.current_path}")
+        print(f"  Type 'exit' or Ctrl-C to quit")
+        print(f"  Press '?' for help")
+        print(f"  Use TAB for auto-completion")
+        print(f"  Use UP/DOWN arrow keys for command history")
+        print(f"  Use LEFT/RIGHT arrow keys for line edit")
         
         try:
             while True:
@@ -697,17 +761,16 @@ class CommandShell:
             # 恢復終端設置
             termios.tcsetattr(sys.stdin, termios.TCSADRAIN, self.old_settings)
         termios.tcsetattr(sys.stdin, termios.TCSADRAIN, self.old_settings)
-
-def reset_vt100():
-    command = ['reset']
-    try:
-        result = subprocess.run(command, capture_output=True, text=True)
-        print(result.stdout)
-    except Exception as e:
-        print(f"Error: {str(e)}")
-        
+       
 if __name__ == '__main__':
-    reset_vt100()
-    shell = CommandShell()
+     # 添加命令行參數解析
+    parser = argparse.ArgumentParser(description='CLI Shell')
+    parser.add_argument('-c', '--command', 
+                    help='Execute command in batch mode and exit')
+    
+    args = parser.parse_args()
+    
+    # 創建 shell 實例，傳入批次命令（如果有）
+    shell = CommandShell(batch_command=args.command)
     shell.run()
 
