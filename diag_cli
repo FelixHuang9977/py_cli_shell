@@ -1,6 +1,8 @@
 #!/bin/bash
+#wrapper for CLI shell and DIAG test
 EXE_FILE="$(realpath $0)"
 DIR="$(dirname $EXE_FILE)"
+cd $DIR
 
 if [[ $1 == help ]] || [[ -z $1 ]]; then
     echo "Usage:"
@@ -18,6 +20,10 @@ if [[ $1 == help ]] || [[ -z $1 ]]; then
     echo
 fi
 
+if [[ -z $1 ]]; then
+    $DIR/.venv/bin/python ./cli_shell.py
+    exit 
+fi
 
 $DIR/.venv/bin/python ./diag_cli.py $@
 

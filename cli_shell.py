@@ -1,4 +1,5 @@
 import os
+import re
 import sys
 import readline
 import importlib.util
@@ -29,11 +30,12 @@ class CommandShell:
         self.history_index = 0
         # flags
         self.is_batch_mode=False
+        self.is_show_builtin_command_in_help=False
 
     def add_builtin_commands(self):
         """添加內建命令"""
         # 添加 info 命令
-        info_parser = argparse.ArgumentParser(description='[built-in] Show information about commands in current directory')
+        info_parser = argparse.ArgumentParser(description='(built-in) Show information about commands in current directory')
         info_parser.add_argument('-a', '--all', action='store_true',
                             help='Show full path and description')
         info_parser.add_argument('-p', '--path', action='store_true',
@@ -100,16 +102,17 @@ class CommandShell:
         else:
             current_rel_path = f'cmd/{current_rel_path}'
         
-        print(f"\nCommands in {current_rel_path}:")
+        print(f"\nUser Commands in [{current_rel_path}] folder:")
         
         if args.all:
             # 顯示完整資訊
             for cmd_name, cmd_path in sorted(commands):
                 if cmd_path == 'Built-in command':
-                    desc = "Built-in command"
-                    print(f"  {cmd_name:<{max_cmd_length}} - {desc}")
-                    print(f"    Path: Built-in")
-                    print()
+                    pass
+                    #desc = "Built-in command"
+                    #print(f"  {cmd_name:<{max_cmd_length}} - {desc}")
+                    #print(f"    Path: Built-in")
+                    #print()
                 else:
                     desc = self.get_command_description(cmd_path)
                     print(f"  {cmd_name:<{max_cmd_length}} - {desc}")
@@ -124,9 +127,11 @@ class CommandShell:
             for cmd_name, cmd_path in sorted(commands):
                 if cmd_path == 'Built-in command':
                     desc = "Built-in command"
+                    #print(f"  {cmd_name:<{max_cmd_length}} - {desc}")
+                    pass
                 else:
                     desc = self.get_command_description(cmd_path)
-                print(f"  {cmd_name:<{max_cmd_length}} - {desc}")
+                    print(f"  {cmd_name:<{max_cmd_length}} - {desc}")
 
     def find_all_commands(self, base_path='cmd', prefix=''):
         """遞迴搜尋所有命令"""
@@ -191,13 +196,14 @@ class CommandShell:
     
         if args.all:
             # 顯示完整資訊
-            print("\nAvailable commands:")
+            print("\nAvailable commands: (help.a)")
             for cmd_name, cmd_path in sorted(commands):
                 if cmd_path == 'Built-in command':
-                    desc = "Built-in command"
-                    print(f"  {cmd_name:<{max_cmd_length}} - {desc}")
-                    print(f"    Path: Built-in")
-                    print()
+                    if self.is_show_builtin_command_in_help:
+                        desc = "Built-in command"
+                        print(f"  {cmd_name:<{max_cmd_length}} - {desc}")
+                        print(f"    Path: Built-in")
+                        print()
                 else:
                     desc = self.get_command_description(cmd_path)
                     print(f"  {cmd_name:<{max_cmd_length}} - {desc}")
@@ -205,12 +211,12 @@ class CommandShell:
                     print()
         elif args.path:
             # 顯示命令和路徑
-            print("\nAvailable commands:")
+            print("\nAvailable commands: (help.b)")
             for cmd_name, cmd_path in sorted(commands):
                 print(f"  {cmd_name:<{max_cmd_length}} - {cmd_path}")
         else:
             # 簡單列表
-            print("\nAvailable commands:")
+            print("\nAvailable commands: (help.c)")
             for cmd_name, cmd_path in sorted(commands):
                 if cmd_path == 'Built-in command':
                     desc = "Built-in command"
@@ -364,20 +370,23 @@ class CommandShell:
         
         # 如果沒有輸入，顯示所有可用命令和目錄
         if not tokens:
-            print("Available commands:")
+            print("Available commands: (help.2.a)")
             for cmd in sorted(self.commands.keys()):
                 if cmd == 'cd':
                     pass
                     #print(f"  {cmd:<30} - Change directory")
                 else:
                     _, parser = self.commands[cmd]
-                    print(f"  {cmd:<30} - {parser.description}")
+                    if not self.is_show_builtin_command_in_help and parser.description.startswith("(built-in)"):
+                        pass
+                    else:
+                        print(f"  {cmd:<30} - {parser.description}")
             
             dirs = self.get_available_dirs()
             if dirs:
                 print("\nSubdirectories:")
                 for dir_name in sorted(dirs):
-                    print(f"  {dir_name}")
+                    print(f"  {dir_name:<30} - Use 'cd {dir_name}' or '{dir_name}' to enter cmd folder")
             return
         # 如果有部分輸入，顯示匹配的命令和目錄
         matching_commands = []
@@ -399,9 +408,13 @@ class CommandShell:
 
         # 顯示匹配結果
         if matching_commands:
-            print("\nMatching commands:")
-            for cmd, desc in matching_commands:
-                print(f"  {cmd:<30} - {desc}")
+            if len(matching_commands) ==1:
+                 #print("\nFull Matched commands:")
+                 self.execute_command(f"{buffer} -h")
+            else:
+                print("\nMatching commands:")
+                for cmd, desc in matching_commands:
+                    print(f"  {cmd:<30} - {desc}")
 
         if matching_dirs:
             print("\nMatching directories:")
@@ -660,6 +673,7 @@ class CommandShell:
         # 處理一般命令
         module, parser = self.commands[command_name]
         try:
+            parser.prog=tokens[0]
             args = parser.parse_args(tokens[1:])
             module.execute(args)
         except SystemExit:
@@ -732,11 +746,10 @@ class CommandShell:
 
         # 互動模式
         print(f"Welcome to CLI Shell: CWD:{self.current_path}")
-        print(f"  Type 'exit' or Ctrl-C to quit")
         print(f"  Press '?' for help")
         print(f"  Use TAB for auto-completion")
-        print(f"  Use UP/DOWN arrow keys for command history")
-        print(f"  Use LEFT/RIGHT arrow keys for line edit")
+        print(f"  Built-in commands: cd, exit, info")
+        
         
         try:
             while True:
@@ -771,8 +784,23 @@ class CommandShell:
             # 恢復終端設置
             termios.tcsetattr(sys.stdin, termios.TCSADRAIN, self.old_settings)
         termios.tcsetattr(sys.stdin, termios.TCSADRAIN, self.old_settings)
-       
+def reset_vt100():
+    command = ['reset']
+    try:
+        result = subprocess.run(command, capture_output=True, text=True)
+        print(result.stdout)
+    except Exception as e:
+        print(f"Error: {str(e)}")
+                   
 if __name__ == '__main__':
+    bBatch=False
+    for v in sys.argv:
+        if v == "-c":
+            bBatch=True
+            
+    if not bBatch:
+        reset_vt100()
+    
      # 添加命令行參數解析
     parser = argparse.ArgumentParser(description='CLI Shell')
     parser.add_argument('-c', '--command', 
