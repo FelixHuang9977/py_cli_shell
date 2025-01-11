@@ -19,6 +19,15 @@ class CommandShell:
         # 當前的輸入緩衝
         self.current_buffer = ""
         self.going_quit=False
+        self.max_size_to_clear_in_a_line=1
+        # 命令歷史
+        self.history = []
+        self.history_index = 0
+
+    def add_to_history(self, command: str):
+        """添加命令到歷史記錄"""
+        if command.strip():  # 只保存非空命令
+            self.history.append(command)
 
     def get_prompt(self):
         """生成提示符號"""
@@ -141,15 +150,17 @@ class CommandShell:
     def show_help_for_current_input(self, buffer: str):
         """顯示當前輸入的幫助信息"""
         tokens = buffer.strip().split()
+        current_token = tokens[-1] if tokens else ""
         
         print('\n')  # 新增一個空行，使輸出更清晰
         
         # 如果沒有輸入，顯示所有可用命令和目錄
         if not tokens:
-            print("\nAvailable commands:")
+            print("Available commands:")
             for cmd in sorted(self.commands.keys()):
                 if cmd == 'cd':
-                    print(f"  {cmd:<30} - Change directory")
+                    pass
+                    #print(f"  {cmd:<30} - Change directory")
                 else:
                     _, parser = self.commands[cmd]
                     print(f"  {cmd:<30} - {parser.description}")
@@ -158,18 +169,40 @@ class CommandShell:
             if dirs:
                 print("\nSubdirectories:")
                 for dir_name in sorted(dirs):
-                    print(f"  {dir_name}/")
+                    print(f"  {dir_name}")
             return
+        # 如果有部分輸入，顯示匹配的命令和目錄
+        matching_commands = []
+        matching_dirs = []
+        
+        # 檢查命令匹配
+        for cmd in sorted(self.commands.keys()):
+            if cmd.startswith(current_token):
+                if cmd == 'cd':
+                    matching_commands.append((cmd, "Change directory"))
+                else:
+                    _, parser = self.commands[cmd]
+                    matching_commands.append((cmd, parser.description))
 
-        # 如果輸入了命令
-        command_name = tokens[0]
-        if command_name in self.commands:
-            _, parser = self.commands[command_name]
-            print("Command help:")
-            parser.print_help()
-            return
+        # 檢查目錄匹配
+        for dir_name in sorted(self.get_available_dirs()):
+            if dir_name.startswith(current_token):
+                matching_dirs.append(dir_name)
 
-        print("Unknown command")
+        # 顯示匹配結果
+        if matching_commands:
+            print("\nMatching commands:")
+            for cmd, desc in matching_commands:
+                print(f"  {cmd:<30} - {desc}")
+
+        if matching_dirs:
+            print("\nMatching directories:")
+            for dir_name in matching_dirs:
+                print(f"  {dir_name}/")
+
+        if not matching_commands and not matching_dirs:
+            print("No matches found")
+
 
     def completer(self, text: str, state: int) -> str:
         """實作自動完成功能"""
@@ -250,15 +283,70 @@ class CommandShell:
         pos = 0
         sys.stdout.write(prompt)
         sys.stdout.flush()
+        self.history_index = len(self.history)  # 重置歷史索引
+
+        def refresh_line():
+            self.max_size_to_clear_in_a_line=max((len(prompt) + len(line) + 1), self.max_size_to_clear_in_a_line)
+            self.max_size_to_clear_in_a_line=min(255, self.max_size_to_clear_in_a_line)
+                
+            """重新顯示當前行，保持游標位置"""
+            # 先回到行首
+            sys.stdout.write('\r')
+            # 清除整行
+            sys.stdout.write(' ' * self.max_size_to_clear_in_a_line)
+            # 回到行首並顯示提示符和當前行內容
+            sys.stdout.write('\r' + prompt + ''.join(line))
+            # 將游標移動到正確位置
+            if pos < len(line):
+                sys.stdout.write('\b' * (len(line) - pos))
+            sys.stdout.flush()
 
         while True:
             try:
                 c = self.getch()
+                
                 # 處理特殊鍵
-                if c == '\x03':  # Ctrl+C
+                if c == '\x1b':  # ESC 序列
+                    next1 = self.getch()
+                    if next1 == '[':  # 方向鍵
+                        next2 = self.getch()
+                        if next2 == 'A':  # 上方向鍵
+                            if self.history_index > 0:
+                                self.history_index -= 1
+                                line = list(self.history[self.history_index])
+                                pos = len(line)
+                                refresh_line()
+                        elif next2 == 'B':  # 下方向鍵
+                            if self.history_index < len(self.history):
+                                self.history_index += 1
+                                if self.history_index < len(self.history):
+                                    line = list(self.history[self.history_index])
+                                else:
+                                    line = []
+                                pos = len(line)
+                                refresh_line()
+                        elif next2 == 'C':  # 右方向鍵
+                            if pos < len(line):
+                                pos += 1
+                                sys.stdout.write('\x1b[C')  # 向右移動游標
+                                sys.stdout.flush()
+                        elif next2 == 'D':  # 左方向鍵
+                            if pos > 0:
+                                pos -= 1
+                                sys.stdout.write('\x1b[D')  # 向左移動游標
+                                sys.stdout.flush()
+                        elif next2 == 'H':  # Home 鍵
+                            pos = 0
+                            sys.stdout.write('\r' + prompt)
+                            sys.stdout.flush()
+                        elif next2 == 'F':  # End 鍵
+                            pos = len(line)
+                            refresh_line()
+                        continue
+
+                elif c == '\x03':  # Ctrl+C
                     line = []
                     raise KeyboardInterrupt
-                    break
                 elif c == '\x04':  # Ctrl+D
                     if not line:
                         print()
@@ -267,38 +355,36 @@ class CommandShell:
                     if pos > 0:
                         line.pop(pos-1)
                         pos -= 1
-                        # 重新顯示行
-                        sys.stdout.write('\r' + ' ' * (len(prompt) + len(line) + 1))
-                        sys.stdout.write('\r' + prompt + ''.join(line))
-                        sys.stdout.flush()
+                        refresh_line()
                 elif c == '?':  # 問號鍵
                     # 顯示幫助
                     current_input = ''.join(line)
                     self.show_help_for_current_input(current_input)
                     # 重新顯示提示符和當前輸入
                     print(f"\n{prompt}{''.join(line)}", end='', flush=True)
+                    # 將游標移動到正確位置
+                    if pos < len(line):
+                        sys.stdout.write('\b' * (len(line) - pos))
+                    sys.stdout.flush()
                 elif c == '\t':  # Tab
                     # 處理自動完成
                     current_input = ''.join(line)
                     new_input = self.handle_tab(current_input)
                     if new_input != current_input:
-                        # 清除當前行
-                        sys.stdout.write('\r' + ' ' * (len(prompt) + len(line) + 1))
-                        sys.stdout.write('\r' + prompt + new_input)
                         line = list(new_input)
                         pos = len(line)
-                    sys.stdout.write('\r' + prompt + ''.join(line))
-                    sys.stdout.flush()
+                    refresh_line()
                 elif c == '\r' or c == '\n':  # Enter
                     print()
-                    return ''.join(line)
+                    command = ''.join(line)
+                    self.add_to_history(command)  # 添加到歷史記錄
+                    return command
                 else:  # 一般字符
                     if ord(c) >= 32:  # 可印字符
+                        # 在游標位置插入字符
                         line.insert(pos, c)
                         pos += 1
-                        # 重新顯示整行
-                        sys.stdout.write('\r' + prompt + ''.join(line))
-                        sys.stdout.flush()
+                        refresh_line()
             except KeyboardInterrupt:
                 raise
         return ''.join(line)
@@ -369,6 +455,7 @@ class CommandShell:
         print("Type 'exit' to quit")
         print("Press '?' for help")
         print("Use TAB for auto-completion")
+        print("Use UP/DOWN arrow keys for command history")
         print(f"Current directory: {self.current_path}")
         print("Press Ctrl-C to quit")
         
