@@ -424,7 +424,70 @@ class CommandShell:
         if not matching_commands and not matching_dirs:
             print("No matches found")
 
+    def get_command_positional_args(self, command_name: str) -> List[str]:
+        """獲取命令的位置參數選項"""
+        if command_name not in self.commands:
+            return []
+        
+        _, parser = self.commands[command_name]
+        args = []
+        for action in parser._actions:
+            # 檢查是否為位置參數（沒有 option_strings）
+            if not action.option_strings and action.help:
+                # 從幫助文本中提取可能的值
+                help_text = action.help.lower()
+                if '[' in help_text and ']' in help_text:
+                    # 提取方括號中的選項
+                    options = re.findall(r'\[(.*?)\]', help_text)
+                    args.extend(opt.strip() for opt in options)
+                elif '(' in help_text and ')' in help_text:
+                    # 提取括號中的選項
+                    options = re.findall(r'\((.*?)\)', help_text)
+                    args.extend(opt.strip() for opt in options)
+        return args
 
+    def get_option_values(self, command_name: str, option: str) -> List[str]:
+        """獲取選項的可能值"""
+        if command_name not in self.commands:
+            return []
+        
+        _, parser = self.commands[command_name]
+        for action in parser._actions:
+            if option in action.option_strings and action.help:
+                # 從幫助文本中提取可能的值
+                help_text = action.help.lower()
+                if '[' in help_text and ']' in help_text:
+                    # 提取方括號中的選項
+                    options = re.findall(r'\[(.*?)\]', help_text)
+                    return [opt.strip() for opt in options]
+                elif '(' in help_text and ')' in help_text:
+                    # 提取括號中的選項
+                    options = re.findall(r'\((.*?)\)', help_text)
+                    return [opt.strip() for opt in options]
+        return []
+
+    def get_subcommands(self, command_name: str) -> List[str]:
+        """獲取命令的子命令列表"""
+        if command_name not in self.commands:
+            return []
+        
+        _, parser = self.commands[command_name]
+        if not hasattr(parser, '_subparsers'):
+            return []
+            
+        # 獲取子解析器
+        subparsers = None
+        for action in parser._actions:
+            if isinstance(action, argparse._SubParsersAction):
+                subparsers = action
+                break
+                
+        if not subparsers:
+            return []
+            
+        # 返回所有子命令
+        return list(subparsers._name_parser_map.keys())
+ 
     def completer(self, text: str, state: int) -> str:
         """實作自動完成功能"""
         buffer = self.current_buffer
@@ -438,34 +501,63 @@ class CommandShell:
                 return matches[state]
             return None
 
+        # 獲取當前命令
+        cmd = tokens[0]
+        
         # 如果是 cd 命令，自動完成目錄
-        if tokens[0] == 'cd' and len(tokens) <= 2:
+        if cmd == 'cd' and len(tokens) <= 2:
             matches = [d for d in self.get_available_dirs() if d.startswith(text)]
             if state < len(matches):
                 return matches[state]
             return None
 
-        # 如果正在輸入選項
-        if len(tokens) >= 1:
-            cmd = tokens[0]
-            if cmd in self.commands:
+        # 如果命令存在
+        if cmd in self.commands:
+            # 如果只有主命令和一個未完成的詞（可能是子命令）
+            if len(tokens) == 2 and not buffer.endswith(' '):
+                # 獲取子命令列表
+                subcommands = self.get_subcommands(cmd)
+                matches = [sc for sc in subcommands if sc.startswith(text)]
+                if matches and state < len(matches):
+                    return matches[state]
+
+            # 檢查最後一個標記是否是選項
+            last_token = tokens[-1] if tokens else ""
+            prev_token = tokens[-2] if len(tokens) > 1 else ""
+            
+            # 如果上一個標記是選項，嘗試完成選項值
+            if prev_token.startswith('-'):
+                values = self.get_option_values(cmd, prev_token)
+                matches = [v for v in values if v.startswith(text)]
+                if state < len(matches):
+                    return matches[state]
+                return None
+            
+            # 如果當前輸入以破折號開頭，提供選項完成
+            if last_token.startswith('-'):
                 options = self.get_command_options(cmd)
                 matches = [opt for opt in options if opt.startswith(text)]
                 if state < len(matches):
                     return matches[state]
+                return None
+            
+            # 否則，提供位置參數的完成
+            args = self.get_command_positional_args(cmd)
+            matches = [arg for arg in args if arg.startswith(text)]
+            if state < len(matches):
+                return matches[state]
+        
         return None
 
     def handle_tab(self, line: str) -> str:
         """處理 Tab 鍵自動完成"""
         self.current_buffer = line
-        # 獲取當前單詞
         tokens = line.split()
         if not line or line[-1].isspace():
             current_word = ""
         else:
             current_word = tokens[-1] if tokens else ""
 
-        # 使用 readline 的完成器獲取可能的完成項
         completions = []
         i = 0
         while True:
@@ -478,17 +570,42 @@ class CommandShell:
         if not completions:
             return line
 
-        # 如果只有一個完成選項，直接使用它
         if len(completions) == 1:
             if tokens:
                 return ' '.join(tokens[:-1] + [completions[0]]) + ' '
             return completions[0] + ' '
 
-        # 如果有多個完成選項，顯示它們
         print('\nPossible completions:')
-        for comp in completions:
-            print(f"  {comp}")
-        
+        if tokens and tokens[0] in self.commands:
+            cmd = tokens[0]
+            
+            # 如果是在輸入子命令
+            if len(tokens) == 2 and not line.endswith(' '):
+                # 顯示子命令的說明
+                _, parser = self.commands[cmd]
+                for action in parser._actions:
+                    if isinstance(action, argparse._SubParsersAction):
+                        for comp in completions:
+                            if comp in action.choices:
+                                subparser = action.choices[comp]
+                                print(f"  {comp:<20} - {subparser.description}")
+                        break
+            elif tokens[-1].startswith('-'):
+                # 顯示選項的說明
+                _, parser = self.commands[cmd]
+                for comp in completions:
+                    for action in parser._actions:
+                        if comp in action.option_strings:
+                            print(f"  {comp:<20} - {action.help}")
+                            break
+            else:
+                # 顯示一般完成項
+                for comp in completions:
+                    print(f"  {comp}")
+        else:
+            for comp in completions:
+                print(f"  {comp}")
+
         # 找到共同前綴
         common_prefix = os.path.commonprefix(completions)
         if common_prefix:

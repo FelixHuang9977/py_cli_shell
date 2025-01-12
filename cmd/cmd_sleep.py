@@ -3,7 +3,7 @@ import time
 import sys
 def setup_parser():
     parser = argparse.ArgumentParser(description='Sleep for specified seconds')
-    parser.add_argument('delay', type=int, help='delay in seconds')
+    parser.add_argument('delay', type=int, help='<int>, delay in seconds')
     return parser
 
 def execute(args):
