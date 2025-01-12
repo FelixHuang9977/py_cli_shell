@@ -104,6 +104,70 @@ class CommandShell:
         
         print(f"\nUser Commands in [{current_rel_path}] folder:")
         
+        # 生成幫助文檔
+        help_content = []
+        help_content.append("Command Line Interface Help Documentation")
+        help_content.append("=====================================")
+        help_content.append("")
+        
+        # 為每個命令收集幫助信息
+        for cmd_name, cmd_path in sorted(commands):
+            if cmd_path == 'Built-in command':
+                if cmd_name == 'cd':
+                    help_content.append(f"\n{cmd_name}")
+                    help_content.append("="* len(cmd_name))
+                    help_content.append("Built-in command for changing directory")
+                    help_content.append("\nUsage: cd [directory]")
+                    help_content.append("       cd ..  (go to parent directory)")
+                elif cmd_name == 'info':
+                    help_content.append(f"\n{cmd_name}")
+                    help_content.append("="* len(cmd_name))
+                    help_content.append("Built-in command for showing command information")
+                    help_content.append("\nUsage: info [-a] [-p]")
+                    help_content.append("  -a, --all   Show full path and description")
+                    help_content.append("  -p, --path  Show command path")
+            else:
+                # 執行命令的 -h 選項來獲取幫助信息
+                try:
+                    # 創建一個臨時的 StringIO 來捕獲輸出
+                    import io
+                    import sys
+                    temp_stdout = io.StringIO()
+                    original_stdout = sys.stdout
+                    sys.stdout = temp_stdout
+
+                    # 執行命令的幫助選項
+                    self.execute_command(f"{cmd_name} -h")
+
+                    # 恢復標準輸出並獲取捕獲的內容
+                    sys.stdout = original_stdout
+                    help_text = temp_stdout.getvalue()
+                    
+                    # 添加到幫助內容
+                    help_content.append(f"\n{cmd_name}")
+                    help_content.append("="* len(cmd_name))
+                    help_content.append(help_text.strip())
+                except Exception as e:
+                    help_content.append(f"\n{cmd_name}")
+                    help_content.append("="* len(cmd_name))
+                    help_content.append(f"Error getting help: {str(e)}")
+
+        # 確保 docs 目錄存在
+        docs_dir = 'docs'
+        if not os.path.exists(docs_dir):
+            os.makedirs(docs_dir)
+
+        # 寫入幫助文檔
+        help_file_path = os.path.join(docs_dir, 'cmd_all_help.txt')
+        try:
+            with open(help_file_path, 'w', encoding='utf-8') as f:
+                f.write('\n'.join(help_content))
+            if not self.is_batch_mode:
+                print(f"\nHelp documentation has been written to: {help_file_path}")
+        except Exception as e:
+            print(f"\nError writing help documentation: {str(e)}")
+
+        # 顯示命令列表（原有功能）
         if args.all:
             # 顯示完整資訊
             for cmd_name, cmd_path in sorted(commands):
