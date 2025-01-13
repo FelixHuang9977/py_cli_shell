@@ -2,7 +2,7 @@ import argparse
 import subprocess
 
 def run_usb_all():
-    command = [ '.venv/bin/python','diag_cli.py','run','usb']
+    command = [ '.venv/bin/python','diag_test.py','run','usb']
     try:
         result = subprocess.run(command, capture_output=True, text=True)
         print(result.stdout)
@@ -10,7 +10,7 @@ def run_usb_all():
         print(f"Error: {str(e)}")
 
 def run_cpu_all():
-    command = [ '.venv/bin/python','diag_cli.py','run','cpu']
+    command = [ '.venv/bin/python','diag_test.py','run','cpu']
     try:
         result = subprocess.run(command, capture_output=True, text=True)
         print(result.stdout)

@@ -34,13 +34,20 @@ if [[ $1 == help ]] || [[ -z $1 ]]; then
     echo
     echo "Testcase:   $(find testcase -type d -name "[a-zA-Z]*" | sed -e 's/^testcase[\/]*//g'| xargs)"
     echo
+    echo "Installed CLI command:"
+	.venv/bin/python ./cli_shell.py -c info | sed 's/^/  /g'
+	echo "Installed test cases:"
+	.venv/bin/python ./diag_test.py list | sed 's/^/  /g'
 fi
 
+$DIR/.venv/bin/python ./cli_shell.py "$@"
+exit 0
+
 if [[ -z $1 ]]; then
-    $DIR/.venv/bin/python ./cli_shell.py
+    $DIR/.venv/bin/python ./cli_shell.py $@
     exit 
 fi
 
-$DIR/.venv/bin/python ./diag_cli.py $@
+$DIR/.venv/bin/python ./diag_test.py $@
 
 [[ $1 == run ]] && echo "last log:" && ls -lrt logs | tail -n 2

@@ -2,63 +2,6 @@ Command Line Interface Help Documentation
 =====================================
 
 
-acpi
-====
-usage: acpi [-h] {list,show} ...
-
-ACPI table management tool
-
-positional arguments:
-  {list,show}  Commands
-    list       List all ACPI tables
-    show       Show specific ACPI table content
-
-options:
-  -h, --help   show this help message and exit
-
-cd
-==
-Built-in command for changing directory
-
-Usage: cd [directory]
-       cd ..  (go to parent directory)
-
-cpu
-===
-usage: cpu [-h] {info,temp,freq,usage,topology,governor} ...
-
-CPU information and management tool
-
-positional arguments:
-  {info,temp,freq,usage,topology,governor}
-                        Commands
-    info                Show CPU information
-    temp                Show CPU temperature
-    freq                Show CPU frequency information
-    usage               Show CPU usage
-    topology            Show CPU topology
-    governor            Show CPU frequency governor settings
-
-options:
-  -h, --help            show this help message and exit
-
-i2c
-===
-usage: i2c [-h] {list,scan,read,write} ...
-
-I2C device management tool
-
-positional arguments:
-  {list,scan,read,write}
-                        Commands
-    list                List I2C buses
-    scan                Scan I2C bus for devices
-    read                Read from I2C device
-    write               Write to I2C device
-
-options:
-  -h, --help            show this help message and exit
-
 info
 ====
 Built-in command for showing command information
@@ -67,43 +10,17 @@ Usage: info [-a] [-p]
   -a, --all   Show full path and description
   -p, --path  Show command path
 
-ipmi
-====
-usage: ipmi [-h] {sensor,fru,sel} ...
+marko
+=====
+usage: marko [-h] [{usb,cpu,all}]
 
-IPMI management tool
-
-positional arguments:
-  {sensor,fru,sel}  Commands
-    sensor          Show sensor readings
-    fru             Show FRU information
-    sel             Show system event log
-
-options:
-  -h, --help        show this help message and exit
-
-network/http/get
-================
-Unknown command: network/http/get
-
-network/ping
-============
-Unknown command: network/ping
-
-nvme
-====
-usage: nvme [-h] {list,smart,error} ...
-
-NVMe device management tool
+Run diagnostic test cases
 
 positional arguments:
-  {list,smart,error}  Commands
-    list              List all NVMe devices
-    smart             Show SMART information
-    error             Show error log
+  {usb,cpu,all}  Test category: usb, cpu, or all
 
 options:
-  -h, --help          show this help message and exit
+  -h, --help     show this help message and exit
 
 pci
 ===
@@ -114,7 +31,8 @@ List PCI devices in the system
 options:
   -h, --help            show this help message and exit
   -v, --verbose         Show detailed information
-  -t TYPE, --type TYPE  Filter by device type (e.g., "VGA", "Network", "Storage")
+  -t TYPE, --type TYPE  Filter by device type (e.g., "VGA", "Network",
+                        "Storage")
   -b BUS, --bus BUS     Filter by bus address
 
 run
@@ -133,87 +51,10 @@ sleep
 =====
 usage: sleep [-h] delay
 
-Sleep for specified seconds
+Sleep for specified seconds, simon
 
 positional arguments:
-  delay       <int>, delay in seconds
+  delay       <int>, delay in seconds, simon
 
 options:
   -h, --help  show this help message and exit
-
-smbios
-======
-usage: smbios [-h] {list,type} ...
-
-SMBIOS information tool
-
-positional arguments:
-  {list,type}  Commands
-    list       List all SMBIOS information
-    type       Show specific type information
-
-options:
-  -h, --help   show this help message and exit
-
-storage
-=======
-usage: storage [-h] {list,smart,raid} ...
-
-Storage information tool
-
-positional arguments:
-  {list,smart,raid}  Commands
-    list             List all storage devices
-    smart            Show SMART information
-    raid             Show RAID information
-
-options:
-  -h, --help         show this help message and exit
-
-system/disk
-===========
-Unknown command: system/disk
-
-system/ps
-=========
-Unknown command: system/ps
-
-test/run
-========
-Unknown command: test/run
-
-test/usb/run
-============
-Unknown command: test/usb/run
-
-uart
-====
-usage: uart [-h] {list,test,monitor,send,config} ...
-
-UART device management tool
-
-positional arguments:
-  {list,test,monitor,send,config}
-                        Commands
-    list                List all UART devices
-    test                Test UART connection
-    monitor             Monitor UART data
-    send                Send data to UART device
-    config              Configure UART device
-
-options:
-  -h, --help            show this help message and exit
-
-usb
-===
-usage: usb [-h] {list,info} ...
-
-USB device management tool
-
-positional arguments:
-  {list,info}  Commands
-    list       List all USB devices
-    info       Show detailed device information
-
-options:
-  -h, --help   show this help message and exit

@@ -30,7 +30,7 @@
             "name": "List",
             "type": "debugpy",
             "request": "launch",
-            "program": "diag_cli.py",
+            "program": "diag_test.py",
             "console": "integratedTerminal",
             "args": [
                 "list"
@@ -40,7 +40,7 @@
             "name": "run all",
             "type": "debugpy",
             "request": "launch",
-            "program": "diag_cli.py",
+            "program": "diag_test.py",
             "console": "integratedTerminal",
             "args": [
                 "run"

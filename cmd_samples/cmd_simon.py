@@ -2,8 +2,8 @@ import argparse
 import time
 import sys
 def setup_parser():
-    parser = argparse.ArgumentParser(description='Sleep for specified seconds, simon')
-    parser.add_argument('delay', type=int, help='<int>, delay in seconds, simon')
+    parser = argparse.ArgumentParser(description='Sleep for specified seconds')
+    parser.add_argument('delay', type=int, help='<int>, delay in seconds')
     return parser
 
 def execute(args):
@@ -17,7 +17,6 @@ def execute(args):
     except KeyboardInterrupt:
         sys.stdout.write('\rSleep interrupted.          \n')  # 清除行
         return
-    
 if __name__ == '__main__':
     parser = setup_parser()
     args = parser.parse_args()

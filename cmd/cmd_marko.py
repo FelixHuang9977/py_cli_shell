@@ -3,7 +3,7 @@ import subprocess
 
 def run_usb_all():
     """執行所有 USB 測試案例"""
-    command = ['.venv/bin/python', 'diag_cli.py', 'run', 'usb']
+    command = ['.venv/bin/python', 'diag_test.py', 'run', 'usb']
     try:
         result = subprocess.run(command, capture_output=True, text=True)
         print(result.stdout)
@@ -12,7 +12,7 @@ def run_usb_all():
 
 def run_cpu_all():
     """執行所有 CPU 測試案例"""
-    command = ['.venv/bin/python', 'diag_cli.py', 'run', 'cpu']
+    command = ['.venv/bin/python', 'diag_test.py', 'run', 'cpu']
     try:
         result = subprocess.run(command, capture_output=True, text=True)
         print(result.stdout)
