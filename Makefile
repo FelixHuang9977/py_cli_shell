@@ -60,7 +60,7 @@ release:
 clean:
 	-@echo "clean all env, packages, logs in 3 secs.....ctrl-c to abort"
 	-@sleep 3
-	-rm -rf venv
+	-rm -rf .venv
 	-rm -rf wheelhouse
 	-find ./ -type d -name __pycache__ -exec rm -rf {} \;
 	-find ./ -type d -name .pytest_cache -exec rm -rf {} \;
