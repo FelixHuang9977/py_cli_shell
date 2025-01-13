@@ -51,6 +51,8 @@ setup_online:
 	chmod +x ./diag_cli
 
 release:
+	mv wheelhouse       wheelhouse.bak
+	mv requirements.txt requirements.txt.bak
 	.venv/bin/pip  freeze > requirements.txt
 	mkdir -p wheelhouse
 	.venv/bin/pip  download -r requirements.txt -d wheelhouse

@@ -6,6 +6,8 @@ __pycache__
 logs/*.log
 logs/*.txt
 ai_code_diff.txt
+requirement.txt.bak
+wheelhouse.bak
 __pycache__/
 *.py[cod]
 *$py.class
